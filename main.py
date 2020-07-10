@@ -172,6 +172,8 @@ class Dieces:
 
         self.app = app
         self.dieces = random.sample(range(1, 7), 2)
+        self.rotation = random.sample(range(0, 360), 2)
+        self.offset = random.sample(range(-10, 10), 4)
         self.sound_effect = None
 
     def roll(self, data=None):
@@ -179,8 +181,12 @@ class Dieces:
             self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
         if data is None:
             self.dieces = random.sample(range(1, 7), 2)
+            self.rotation = random.sample(range(0, 360), 2)
+            self.offset = random.sample(range(-10, 10), 4)
             connection.Send({"action": "roll", 'dieces': self.dieces})
         else:
+            self.rotation = random.sample(range(0, 360), 2)
+            self.offset = random.sample(range(-10, 10), 2)
             self.dieces = data['dieces']
         self.sound_effect.play()
 
@@ -188,8 +194,11 @@ class Dieces:
         for idx in range(2):
             diece = pygame.image.load(
                 f"images/digit-{self.dieces[idx]}-white.png")
-            x = self.app.weight // 2 - diece.get_width() // 2
-            y = self.app.height // 2 - diece.get_height() // 2 + 40*(2*idx-1)
+            diece = pygame.transform.rotozoom(diece, self.rotation[idx], 1.0)
+            x = self.app.weight // 2 - diece.get_width() // 2 + \
+                self.offset[2*idx]
+            y = self.app.height // 2 - diece.get_height() // 2 + 40*(2*idx-1) + \
+                self.offset[2*idx+1]
             screen.blit(diece, (x, y))
 
 
