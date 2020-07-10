@@ -186,7 +186,7 @@ class Dieces:
             connection.Send({"action": "roll", 'dieces': self.dieces})
         else:
             self.rotation = random.sample(range(0, 360), 2)
-            self.offset = random.sample(range(-10, 10), 2)
+            self.offset = random.sample(range(-10, 10), 4)
             self.dieces = data['dieces']
         self.sound_effect.play()
 
