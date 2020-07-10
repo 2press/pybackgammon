@@ -1,6 +1,7 @@
 import pygame
 import os
 import math
+import random
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
@@ -91,13 +92,38 @@ class Board:
         pygame.draw.rect(screen, self.WOOD_COLOR, wood)
 
 
+class Dieces:
+
+    def __init__(self, app):
+
+        self.app = app
+        self.dieces = random.sample(range(1, 7), 2)
+        self.sound_effect = None
+
+    def roll(self):
+        if self.sound_effect is None:
+            self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
+        self.dieces = random.sample(range(1, 7), 2)
+        self.sound_effect.play()
+
+    def render(self, screen):
+        for idx in range(2):
+            diece = pygame.image.load(
+                f"images/digit-{self.dieces[idx]}-white.png")
+            x = self.app.weight // 2 - diece.get_width() // 2
+            y = self.app.height // 2 - diece.get_height() // 2 + 40*(2*idx-1)
+            screen.blit(diece, (x, y))
+
+
 class App:
     def __init__(self):
         self._running = True
         self._screen = None
+        self.reset_sound = None
         self.size = self.weight, self.height = 1800, 960
         self.board = Board(self)
         self.init_pieces()
+        self.dieces = Dieces(self)
 
     def init_pieces(self):
         self.pieces = list()
@@ -126,8 +152,13 @@ class App:
                 pos = (x, y)
                 self.pieces.append(Piece(pos, is_black))
 
+        if self.reset_sound is not None:
+            self.reset_sound.play()
+
     def on_init(self):
         pygame.init()
+        pygame.mixer.init()
+        self.reset_sound = pygame.mixer.Sound('sound/button.wav')
         pygame.display.set_caption('Backgammon')
         self.clock = pygame.time.Clock()
         self._screen = pygame.display.set_mode(
@@ -137,6 +168,11 @@ class App:
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                self.dieces.roll()
+            elif event.key == pygame.K_ESCAPE:
+                self.init_pieces()
         else:
             for idx, piece in enumerate(self.pieces):
                 if piece.handle_event(event):
@@ -158,6 +194,7 @@ class App:
         self.board.render(self._screen)
         for piece in self.pieces[::-1]:
             piece.update(self._screen)
+        self.dieces.render(self._screen)
         pygame.display.flip()
 
     def on_cleanup(self):
