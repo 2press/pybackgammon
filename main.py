@@ -49,6 +49,7 @@ class MyServer(Server):
 
     def Connected(self, channel, addr):
         self.addPlayer(channel)
+        self.sendPlayers()
 
     def addPlayer(self, player):
         print("New Player" + str(player.addr))
@@ -58,6 +59,11 @@ class MyServer(Server):
     def delPlayer(self, player):
         print("Deleting Player" + str(player.addr))
         del self.players[player]
+        self.sendPlayers()
+
+    def sendPlayers(self):
+        for p in self.players:
+            p.Send({'action': 'playercount', 'count': len(self.players)})
 
     def sendToOthers(self, data, channel):
         for player in self.players:
@@ -152,7 +158,7 @@ class Board:
         self.distance_y = 100
         self.offset_y = (self.app.height -
                          self.distance_y) // 2 - self.triangle_height
-        self.offset_x = self.app.weight - 12*self.triangle_width
+        self.offset_x = self.app.width - 12*self.triangle_width
 
     def render(self, screen):
         screen.fill(self.BG_COLOR)
@@ -167,6 +173,12 @@ class Board:
                         (idx*self.triangle_width + self.offset_x * (idx // 6), self.triangle_height+self.offset_y+self.distance_y))
 
         pygame.draw.rect(screen, self.WOOD_COLOR, wood)
+
+        text = self.app.font.render(
+            f'{self.app.player_count} Spieler', True, (255, 255, 255))
+        text_rect = text.get_rect()
+        text_rect.center = (self.app.width // 2, 15)
+        screen.blit(text, text_rect)
 
 
 class Dieces:
@@ -201,7 +213,7 @@ class Dieces:
                 f"images/digit-{self.dieces[idx]}-white.png")
             self.images[idx] = pygame.transform.rotozoom(
                 self.images[idx], self.rotation[idx], 1.0)
-            x = self.app.weight // 2 + \
+            x = self.app.width // 2 + \
                 self.offset[2*idx]
             y = self.app.height // 2 + 40*(2*idx-1) + \
                 self.offset[2*idx+1]
@@ -222,11 +234,12 @@ class App(ConnectionListener):
         self._running = True
         self._screen = None
         self.reset_sound = None
-        self.size = self.weight, self.height = 1800, 960
+        self.size = self.width, self.height = 1800, 960
         self.board = Board(self)
         self.init_pieces()
         self.dieces = Dieces(self)
         self.run_server = run_server
+        self.player_count = 0
         port = int(port)
         if self.run_server:
             self.server = MyServer(localaddr=(host, port))
@@ -252,7 +265,7 @@ class App(ConnectionListener):
                 offset_x = self.board.triangle_width//2 + \
                     self.board.triangle_width * (field_id % 12) + \
                     ((field_id % 12) // 6) * self.board.offset_x
-                x = offset_x if top else self.weight - offset_x
+                x = offset_x if top else self.width - offset_x
                 ((field_id % 12) // 6) * self.board.offset_x
                 y = self.piece_size * \
                     (piece_id*2+1) if top else self.height - \
@@ -271,6 +284,7 @@ class App(ConnectionListener):
         pygame.mixer.init()
         self.reset_sound = pygame.mixer.Sound('sound/button.wav')
         self.impact_sound = pygame.mixer.Sound('sound/impact.wav')
+        self.font = pygame.font.Font(pygame.font.get_default_font(), 22)
         pygame.display.set_caption('Backgammon')
         self.clock = pygame.time.Clock()
         self._screen = pygame.display.set_mode(
@@ -340,6 +354,9 @@ class App(ConnectionListener):
 
     def Network_impact(self, data):
         self.impact_sound.play()
+
+    def Network_playercount(self, data):
+        self.player_count = int(data['count'])
 
     def Network_move(self, data):
         piece_move = data['piece']
