@@ -1,9 +1,68 @@
-import pygame
-import os
+import argparse
 import math
+import os
 import random
+import socket
+import time
+from weakref import WeakKeyDictionary
+
+import pygame
+import requests
+from PodSixNet.Channel import Channel
+from PodSixNet.Connection import ConnectionListener, connection
+from PodSixNet.Server import Server
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
+
+
+class ClientChannel(Channel):
+
+    def __init__(self, *args, **kwargs):
+        Channel.__init__(self, *args, **kwargs)
+
+    def Network_resetboard(self, data):
+        self._server.sendToOthers(
+            {"action": "resetboard"}, self)
+
+    def Network_roll(self, data):
+        self._server.sendToOthers(
+            {"action": "roll", 'dieces': data['dieces']}, self)
+
+    def Network_move(self, data):
+        self._server.sendToOthers(
+            {"action": "move", 'piece': data['piece']}, self)
+
+    def Close(self):
+        self._server.delPlayer(self)
+
+
+class MyServer(Server):
+
+    channelClass = ClientChannel
+
+    def __init__(self, *args, **kwargs):
+        Server.__init__(self, *args, **kwargs)
+        self.players = WeakKeyDictionary()
+        ip = get_my_ip()
+        port = kwargs['localaddr'][1]
+        print(f'Starting Server on {ip}:{port}')
+
+    def Connected(self, channel, addr):
+        self.addPlayer(channel)
+
+    def addPlayer(self, player):
+        print("New Player" + str(player.addr))
+        self.players[player] = True
+        print("players", [p for p in self.players])
+
+    def delPlayer(self, player):
+        print("Deleting Player" + str(player.addr))
+        del self.players[player]
+
+    def sendToOthers(self, data, channel):
+        for player in self.players:
+            if player != channel:
+                player.Send(data)
 
 
 def scale_image(image, scale=0.7):
@@ -11,9 +70,15 @@ def scale_image(image, scale=0.7):
         image, ((int)(image.get_width() * scale), (int)(image.get_height() * scale)))
 
 
+def get_my_ip():
+    url = 'https://api.ipify.org'
+    return requests.get(url=url).text
+
+
 class Piece:
-    def __init__(self, pos=(0, 0), black=True):
+    def __init__(self, ident, pos=(0, 0), black=True):
         self.dragging = False
+        self.ident = ident
         self.black = black
         self.color = 'black' if self.black else 'white'
         self.image = scale_image(pygame.image.load(
@@ -27,6 +92,11 @@ class Piece:
             pos = pygame.mouse.get_pos()
             self.rect.center = (pos[0] + self.offset[0],
                                 pos[1] + self.offset[1])
+            self.send_move()
+        screen.blit(self.image, self.rect)
+
+    def move(self, pos, screen):
+        self.rect.center = (pos[0], pos[1])
         screen.blit(self.image, self.rect)
 
     def criclecolide(self, pos):
@@ -52,6 +122,10 @@ class Piece:
             return True
         else:
             return False
+
+    def send_move(self):
+        connection.Send({'action': 'move', 'piece': (
+            self.ident, self.rect.center[0], self.rect.center[1])})
 
 
 class Board:
@@ -100,10 +174,14 @@ class Dieces:
         self.dieces = random.sample(range(1, 7), 2)
         self.sound_effect = None
 
-    def roll(self):
+    def roll(self, data=None):
         if self.sound_effect is None:
             self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
-        self.dieces = random.sample(range(1, 7), 2)
+        if data is None:
+            self.dieces = random.sample(range(1, 7), 2)
+            connection.Send({"action": "roll", 'dieces': self.dieces})
+        else:
+            self.dieces = data['dieces']
         self.sound_effect.play()
 
     def render(self, screen):
@@ -115,8 +193,8 @@ class Dieces:
             screen.blit(diece, (x, y))
 
 
-class App:
-    def __init__(self):
+class App(ConnectionListener):
+    def __init__(self, host, port, run_server=False):
         self._running = True
         self._screen = None
         self.reset_sound = None
@@ -124,8 +202,13 @@ class App:
         self.board = Board(self)
         self.init_pieces()
         self.dieces = Dieces(self)
+        self.run_server = run_server
+        port = int(port)
+        if self.run_server:
+            self.server = MyServer(localaddr=(host, port))
+        self.Connect((host, port))
 
-    def init_pieces(self):
+    def init_pieces(self, send=True):
         self.pieces = list()
         self.fields = [[] for _ in range(24)]
         self.fields[0] = [True] * 2
@@ -138,6 +221,7 @@ class App:
         self.fields[12] = [False] * 5
         self.pieces = list()
         self.piece_size = 42
+        ident = 1
         for field_id, field in enumerate(self.fields):
             top = field_id // 12 == 1
             for piece_id, is_black in enumerate(field):
@@ -150,10 +234,13 @@ class App:
                     (piece_id*2+1) if top else self.height - \
                     self.piece_size * (piece_id*2+1)
                 pos = (x, y)
-                self.pieces.append(Piece(pos, is_black))
+                self.pieces.append(Piece(ident, pos, is_black))
+                ident += 1
 
         if self.reset_sound is not None:
             self.reset_sound.play()
+            if send:
+                connection.Send({"action": "resetboard"})
 
     def on_init(self):
         pygame.init()
@@ -188,7 +275,10 @@ class App:
                     break
 
     def on_loop(self):
-        pass
+        connection.Pump()
+        self.Pump()
+        if self.run_server:
+            self.server.Pump()
 
     def on_render(self):
         self.board.render(self._screen)
@@ -212,7 +302,31 @@ class App:
             self.on_render()
         self.on_cleanup()
 
+    def Network_connected(self, data):
+        print("Connected to the Server")
+
+    def Network_resetboard(self, data):
+        self.init_pieces(False)
+
+    def Network_roll(self, data):
+        self.dieces.roll(data)
+
+    def Network_move(self, data):
+        piece_move = data['piece']
+        for piece in self.pieces:
+            if piece.ident == piece_move[0]:
+                piece.move((piece_move[1], piece_move[2]), self._screen)
+                break
+        else:
+            raise ValueError('Invalid piece ident!')
+
 
 if __name__ == "__main__":
-    theApp = App()
+    parser = argparse.ArgumentParser("Backgammon")
+    parser.add_argument("--server", action="store_true")
+    parser.add_argument(
+        "--host", default=socket.gethostbyname(socket.gethostname()))
+    parser.add_argument("--port", default='61096')
+    args = parser.parse_args()
+    theApp = App(args.host, args.port, args.server)
     theApp.on_execute()
