@@ -178,6 +178,8 @@ class Dieces:
         self.rotation = random.sample(range(0, 360), 2)
         self.offset = random.sample(range(-10, 10), 4)
         self.sound_effect = None
+        self.images = [None]*2
+        self.rects = [None]*2
 
     def roll(self, data=None):
         if self.sound_effect is None:
@@ -195,14 +197,24 @@ class Dieces:
 
     def render(self, screen):
         for idx in range(2):
-            diece = pygame.image.load(
+            self.images[idx] = pygame.image.load(
                 f"images/digit-{self.dieces[idx]}-white.png")
-            diece = pygame.transform.rotozoom(diece, self.rotation[idx], 1.0)
-            x = self.app.weight // 2 - diece.get_width() // 2 + \
+            self.images[idx] = pygame.transform.rotozoom(
+                self.images[idx], self.rotation[idx], 1.0)
+            x = self.app.weight // 2 + \
                 self.offset[2*idx]
-            y = self.app.height // 2 - diece.get_height() // 2 + 40*(2*idx-1) + \
+            y = self.app.height // 2 + 40*(2*idx-1) + \
                 self.offset[2*idx+1]
-            screen.blit(diece, (x, y))
+            self.rects[idx] = self.images[idx].get_rect()
+            self.rects[idx].center = (x, y)
+            screen.blit(self.images[idx], self.rects[idx])
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            for r in self.rects:
+                if r.collidepoint(event.pos):
+                    self.roll()
+                    break
 
 
 class App(ConnectionListener):
@@ -286,6 +298,8 @@ class App(ConnectionListener):
                     else:
                         self.pieces.insert(0, self.pieces.pop(idx))
                     break
+            else:
+                self.dieces.handle_event(event)
 
     def on_loop(self):
         connection.Pump()
