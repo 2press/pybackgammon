@@ -21,16 +21,16 @@ class ClientChannel(Channel):
         Channel.__init__(self, *args, **kwargs)
 
     def Network_resetboard(self, data):
-        self._server.sendToOthers(
-            {"action": "resetboard"}, self)
+        self._server.sendToOthers(data, self)
 
     def Network_roll(self, data):
-        self._server.sendToOthers(
-            {"action": "roll", 'dieces': data['dieces']}, self)
+        self._server.sendToOthers(data, self)
 
     def Network_move(self, data):
-        self._server.sendToOthers(
-            {"action": "move", 'piece': data['piece']}, self)
+        self._server.sendToOthers(data, self)
+
+    def Network_impact(self, data):
+        self._server.sendToOthers(data, self)
 
     def Close(self):
         self._server.delPlayer(self)
@@ -76,7 +76,8 @@ def get_my_ip():
 
 
 class Piece:
-    def __init__(self, ident, pos=(0, 0), black=True):
+    def __init__(self, app, ident, pos=(0, 0), black=True):
+        self.app = app
         self.dragging = False
         self.ident = ident
         self.black = black
@@ -117,6 +118,8 @@ class Piece:
             return True
         elif self.dragging and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.dragging = False
+            self.app.impact_sound.play()
+            connection.Send({'action': 'impact'})
             return True
         elif self.dragging and event.type == pygame.MOUSEMOTION:
             return True
@@ -243,7 +246,7 @@ class App(ConnectionListener):
                     (piece_id*2+1) if top else self.height - \
                     self.piece_size * (piece_id*2+1)
                 pos = (x, y)
-                self.pieces.append(Piece(ident, pos, is_black))
+                self.pieces.append(Piece(self, ident, pos, is_black))
                 ident += 1
 
         if self.reset_sound is not None:
@@ -255,6 +258,7 @@ class App(ConnectionListener):
         pygame.init()
         pygame.mixer.init()
         self.reset_sound = pygame.mixer.Sound('sound/button.wav')
+        self.impact_sound = pygame.mixer.Sound('sound/impact.wav')
         pygame.display.set_caption('Backgammon')
         self.clock = pygame.time.Clock()
         self._screen = pygame.display.set_mode(
@@ -319,6 +323,9 @@ class App(ConnectionListener):
 
     def Network_roll(self, data):
         self.dieces.roll(data)
+
+    def Network_impact(self, data):
+        self.impact_sound.play()
 
     def Network_move(self, data):
         piece_move = data['piece']
