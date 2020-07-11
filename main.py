@@ -192,15 +192,17 @@ class Dice:
 
         self.app = app
         self.roll_random()
-        self.rotation = random.sample(range(0, 360), 2)
-        self.offset = random.sample(range(-10, 10), 4)
+        self.generate_fluctiatons()
         self.sound_effect = None
+        self.cheer_sound = None
         self.images = [None]*2
         self.rects = [None]*2
 
     def roll(self, data=None):
         if self.sound_effect is None:
             self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
+        if self.cheer_sound is None:
+            self.cheer_sound = pygame.mixer.Sound('sound/cheer.wav')
         if data is None:
             self.roll_random()
             self.generate_fluctiatons()
@@ -208,6 +210,8 @@ class Dice:
         else:
             self.generate_fluctiatons()
             self.dice = data['dice']
+        if self.dice[0] == self.dice[1]:
+            self.cheer_sound.play()
         self.sound_effect.play()
 
     def roll_random(self):
