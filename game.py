@@ -117,6 +117,15 @@ class Board:
         text_rect.center = (self.app.width // 2, 15)
         screen.blit(text_surf, text_rect)
 
+        for idx, counter in enumerate(self.app.dice.eye_counter):
+            text = f'{counter}'
+            color = (255, 255, 255) if idx == 1 else (0, 0, 0)
+            text_surf = self.app.font.render(text, True, color)
+            text_rect = text_surf.get_rect()
+            text_rect.center = (self.app.width // 2 + 35 *
+                                (2*idx-1), self.app.height - 20)
+            screen.blit(text_surf, text_rect)
+
         rect = self.black_arrow.get_rect()
         rect.center = (20, self.app.height // 2 - 30)
         screen.blit(self.black_arrow, rect.center)
@@ -137,6 +146,10 @@ class Dice:
         self.images = [None]*2
         self.rects = [None]*2
         self.black = self.app.run_server
+        self.reset()
+
+    def reset(self):
+        self.eye_counter = [0]*2
 
     def roll(self, data=None):
         if self.sound_effect is None:
@@ -147,11 +160,19 @@ class Dice:
             self.roll_random()
             self.generate_fluctuations()
             self.black = self.app.run_server
+            if self.black:
+                self.eye_counter[0] += sum(self.dice)
+            else:
+                self.eye_counter[1] += sum(self.dice)
             self.send_state()
         else:
             self.generate_fluctuations()
             self.dice = data['dice']
             self.black = not self.app.run_server
+            if self.black:
+                self.eye_counter[0] += sum(self.dice)
+            else:
+                self.eye_counter[1] += sum(self.dice)
         if self.dice[0] == self.dice[1]:
             self.cheer_sound.play()
         self.sound_effect.play()

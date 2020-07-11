@@ -13,8 +13,8 @@ class App(ConnectionListener):
         self.run_server = run_server
         self.size = self.width, self.height = 1800, 960
         self.board = Board(self)
-        self.init_pieces()
         self.dice = Dice(self)
+        self.init_pieces()
         self.player_count = 0
         self.other_mouse = OtherMouse()
         if self.run_server:
@@ -50,6 +50,7 @@ class App(ConnectionListener):
                 pos = (x, y)
                 self.pieces.append(Piece(self, ident, pos, is_black))
                 ident += 1
+        self.dice.reset()
 
         if self.reset_sound is not None:
             self.reset_sound.play()
