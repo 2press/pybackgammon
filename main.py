@@ -200,7 +200,7 @@ class Dice:
 
     def roll(self, data=None):
         if self.sound_effect is None:
-            self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
+            self.sound_effect = pygame.mixer.Sound('sound/dice.wav')
         if self.cheer_sound is None:
             self.cheer_sound = pygame.mixer.Sound('sound/cheer.wav')
         if data is None:
