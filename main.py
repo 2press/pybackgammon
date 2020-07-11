@@ -32,6 +32,9 @@ class ClientChannel(Channel):
     def Network_impact(self, data):
         self._server.sendToOthers(data, self)
 
+    def Network_ping(self, data):
+        self.Send({'action': 'pong'})
+
     def Close(self):
         self._server.delPlayer(self)
 
@@ -240,7 +243,6 @@ class App(ConnectionListener):
         self.dieces = Dieces(self)
         self.run_server = run_server
         self.player_count = 0
-        port = int(port)
         if self.run_server:
             self.server = MyServer(localaddr=(host, port))
         self.Connect((host, port))
@@ -258,6 +260,7 @@ class App(ConnectionListener):
         self.fields[12] = [False] * 5
         self.pieces = list()
         self.piece_size = 42
+        self.ping_iter = 0
         ident = 1
         for field_id, field in enumerate(self.fields):
             top = field_id // 12 == 1
@@ -291,6 +294,15 @@ class App(ConnectionListener):
             self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
         self._running = True
 
+    def ping(self):
+        connection.Send({"action": "ping"})
+
+    def keep_connection_alive(self):
+        # Ping every 4 seconds
+        self.ping_iter = (self.ping_iter + 1) % 240
+        if self.ping_iter == 0:
+            self.ping()
+
     def on_event(self, event):
         if event.type == pygame.QUIT:
             self._running = False
@@ -316,6 +328,7 @@ class App(ConnectionListener):
                 self.dieces.handle_event(event)
 
     def on_loop(self):
+        self.keep_connection_alive()
         connection.Pump()
         self.Pump()
         if self.run_server:
@@ -355,6 +368,9 @@ class App(ConnectionListener):
     def Network_impact(self, data):
         self.impact_sound.play()
 
+    def Network_pong(self, data):
+        pass
+
     def Network_playercount(self, data):
         self.player_count = int(data['count'])
 
@@ -375,5 +391,5 @@ if __name__ == "__main__":
         "--host", default=socket.gethostbyname(socket.gethostname()))
     parser.add_argument("--port", default='61096')
     args = parser.parse_args()
-    theApp = App(args.host, args.port, args.server)
+    theApp = App(args.host.strip(), int(args.port), args.server)
     theApp.on_execute()
