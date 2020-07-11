@@ -6,6 +6,7 @@ import socket
 
 import pygame
 from PodSixNet.Connection import connection
+from tools import scale_image
 
 
 class Piece:
@@ -15,7 +16,7 @@ class Piece:
         self.ident = ident
         self.black = black
         self.color = 'black' if self.black else 'white'
-        self.image = self._scale_image(pygame.image.load(
+        self.image = scale_image(pygame.image.load(
             f"images/piece-{self.color}-2-sh.png"))
         self.rect = self.image.get_rect()
         self.rect.center = pos
@@ -62,10 +63,6 @@ class Piece:
     def send_move(self):
         connection.Send({'action': 'move', 'piece': (
             self.ident, self.rect.center[0], self.rect.center[1])})
-
-    def _scale_image(self, image, scale=0.7):
-        return pygame.transform.smoothscale(
-            image, (int(image.get_width() * scale), int(image.get_height() * scale)))
 
 
 class Board:
@@ -172,3 +169,23 @@ class Dice:
                 if r.collidepoint(event.pos):
                     self.roll()
                     break
+
+
+class OtherMouse:
+
+    def __init__(self):
+        self.visible = False
+        self.pos = (0, 0)
+        self.image = scale_image(pygame.image.load(f"images/crosshair.png"))
+        self.rect = self.image.get_rect()
+
+    def set_visible(self, visible=True):
+        self.visible = visible
+
+    def setPostion(self, pos):
+        self.visible = True
+        self.rect.center = self.pos = pos
+
+    def render(self, screen):
+        if self.visible:
+            screen.blit(self.image, self.rect)

@@ -1,7 +1,7 @@
 import pygame
 from PodSixNet.Connection import ConnectionListener, connection
 
-from game import Board, Dice, Piece
+from game import Board, Dice, Piece, OtherMouse
 from server import BackgammonServer
 
 
@@ -16,6 +16,7 @@ class App(ConnectionListener):
         self.dice = Dice(self)
         self.run_server = run_server
         self.player_count = 0
+        self.other_mouse = OtherMouse()
         if self.run_server:
             self.server = BackgammonServer(localaddr=(host, port))
         self.Connect((host, port))
@@ -91,20 +92,25 @@ class App(ConnectionListener):
             elif event.key == pygame.K_ESCAPE:
                 self.init_pieces()
         else:
-            for idx, piece in enumerate(self.pieces):
-                if piece.handle_event(event):
-                    if idx == 0:
-                        break
-                    for idx2, piece2 in enumerate(self.pieces):
-                        if idx == idx2:
-                            continue
-                        if piece.rect.colliderect(piece2.rect):
-                            break
-                    else:
-                        self.pieces.insert(0, self.pieces.pop(idx))
+            self.handle_piece_events(event)
+            if event.type == pygame.MOUSEMOTION:
+                connection.Send({'action': 'mousemotion', 'pos': event.pos})
+
+    def handle_piece_events(self, event):
+        for idx, piece in enumerate(self.pieces):
+            if piece.handle_event(event):
+                if idx == 0:
                     break
-            else:
-                self.dice.handle_event(event)
+                for idx2, piece2 in enumerate(self.pieces):
+                    if idx == idx2:
+                        continue
+                    if piece.rect.colliderect(piece2.rect):
+                        break
+                else:
+                    self.pieces.insert(0, self.pieces.pop(idx))
+                break
+        else:
+            self.dice.handle_event(event)
 
     def on_loop(self):
         self.keep_connection_alive()
@@ -118,6 +124,7 @@ class App(ConnectionListener):
         for piece in self.pieces[::-1]:
             piece.update(self._screen)
         self.dice.render(self._screen)
+        self.other_mouse.render(self._screen)
         pygame.display.flip()
 
     def on_cleanup(self):
@@ -154,11 +161,16 @@ class App(ConnectionListener):
     def Network_pong(self, data):
         pass
 
+    def Network_mousemotion(self, data):
+        self.other_mouse.setPostion(data['pos'])
+
     def Network_playercount(self, data):
         new_player_count = int(data['count'])
         if self.run_server and new_player_count > self.player_count:
             self.send_gamestate()
         self.player_count = new_player_count
+        if self.player_count < 2:
+            self.other_mouse.set_visible(False)
 
     def Network_move(self, data):
         piece_move = data['piece']
