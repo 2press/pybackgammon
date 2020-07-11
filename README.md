@@ -5,3 +5,7 @@
 * Run `python main.py --server` to host a server with a client.
 * Run `python main.py --host {ip}` to connect to a host as a client.
 * Th default port is `61096` TCP, which can be changed by passing `--port {port}`.
+
+## TODO
+
+* Make is possible to undo and redo moves. This would allow to if a move was correct or where a piece was placed before.
