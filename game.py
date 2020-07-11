@@ -80,6 +80,10 @@ class Board:
                     f"images/row{row_idx+1}-triangle-{color}.gif")
                 row.append(image)
             self.triangles.append(row)
+        self.black_arrow = scale_image(
+            pygame.image.load("images/black_arrow.png"), 0.5)
+        self.white_arrow = scale_image(
+            pygame.image.load("images/white_arrow.png"), 0.5)
         self.triangle_width = self.triangles[0][0].get_width()
         self.triangle_height = self.triangles[0][0].get_height()
 
@@ -109,6 +113,13 @@ class Board:
         text_rect = text_surf.get_rect()
         text_rect.center = (self.app.width // 2, 15)
         screen.blit(text_surf, text_rect)
+
+        rect = self.black_arrow.get_rect()
+        rect.center = (20, self.app.height // 2 - 30)
+        screen.blit(self.black_arrow, rect.center)
+        rect = self.white_arrow.get_rect()
+        rect.center = (20, self.app.height // 2 + 10)
+        screen.blit(self.white_arrow, rect.center)
 
 
 class Dice:
