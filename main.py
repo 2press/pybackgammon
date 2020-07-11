@@ -201,14 +201,19 @@ class Dieces:
             self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
         if data is None:
             self.dieces = random.sample(range(1, 7), 2)
-            self.rotation = random.sample(range(0, 360), 2)
-            self.offset = random.sample(range(-10, 10), 4)
-            connection.Send({"action": "roll", 'dieces': self.dieces})
+            self.generate_fluctiatons()
+            self.send_state()
         else:
-            self.rotation = random.sample(range(0, 360), 2)
-            self.offset = random.sample(range(-10, 10), 4)
+            self.generate_fluctiatons()
             self.dieces = data['dieces']
         self.sound_effect.play()
+
+    def generate_fluctiatons(self):
+        self.rotation = random.sample(range(0, 360), 2)
+        self.offset = random.sample(range(-10, 10), 4)
+
+    def send_state(self):
+        connection.Send({"action": "roll", 'dieces': self.dieces})
 
     def render(self, screen):
         for idx in range(2):
@@ -281,6 +286,12 @@ class App(ConnectionListener):
             self.reset_sound.play()
             if send:
                 connection.Send({"action": "resetboard"})
+
+    def send_gamestate(self):
+        pieces = list()
+        for p in self.pieces:
+            p.send_move()
+        self.dieces.send_state()
 
     def on_init(self):
         pygame.init()
@@ -372,7 +383,10 @@ class App(ConnectionListener):
         pass
 
     def Network_playercount(self, data):
-        self.player_count = int(data['count'])
+        new_player_count = int(data['count'])
+        if self.run_server and new_player_count > self.player_count:
+            self.send_gamestate()
+        self.player_count = new_player_count
 
     def Network_move(self, data):
         piece_move = data['piece']
