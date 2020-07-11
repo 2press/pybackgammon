@@ -9,3 +9,7 @@
 ## TODO
 
 * Make is possible to undo and redo moves. This would allow to if a move was correct or where a piece was placed before.
+* Save gamestate to file.
+* Show mouse of other player.
+* Counter of dieces.
+* Place direction hints.

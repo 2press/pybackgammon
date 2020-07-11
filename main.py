@@ -186,12 +186,12 @@ class Board:
         screen.blit(text_surf, text_rect)
 
 
-class Dieces:
+class Dice:
 
     def __init__(self, app):
 
         self.app = app
-        self.dieces = random.sample(range(1, 7), 2)
+        self.roll_random()
         self.rotation = random.sample(range(0, 360), 2)
         self.offset = random.sample(range(-10, 10), 4)
         self.sound_effect = None
@@ -202,25 +202,28 @@ class Dieces:
         if self.sound_effect is None:
             self.sound_effect = pygame.mixer.Sound('sound/dices.wav')
         if data is None:
-            self.dieces = random.sample(range(1, 7), 2)
+            self.roll_random()
             self.generate_fluctiatons()
             self.send_state()
         else:
             self.generate_fluctiatons()
-            self.dieces = data['dieces']
+            self.dice = data['dice']
         self.sound_effect.play()
+
+    def roll_random(self):
+        self.dice = [random.randint(1, 6) for _ in range(2)]
 
     def generate_fluctiatons(self):
         self.rotation = random.sample(range(0, 360), 2)
         self.offset = random.sample(range(-10, 10), 4)
 
     def send_state(self):
-        connection.Send({"action": "roll", 'dieces': self.dieces})
+        connection.Send({"action": "roll", 'dice': self.dice})
 
     def render(self, screen):
         for idx in range(2):
             self.images[idx] = pygame.image.load(
-                f"images/digit-{self.dieces[idx]}-white.png")
+                f"images/digit-{self.dice[idx]}-white.png")
             self.images[idx] = pygame.transform.rotozoom(
                 self.images[idx], self.rotation[idx], 1.0)
             x = self.app.width // 2 + \
@@ -247,7 +250,7 @@ class App(ConnectionListener):
         self.size = self.width, self.height = 1800, 960
         self.board = Board(self)
         self.init_pieces()
-        self.dieces = Dieces(self)
+        self.dice = Dice(self)
         self.run_server = run_server
         self.player_count = 0
         if self.run_server:
@@ -293,7 +296,7 @@ class App(ConnectionListener):
         pieces = list()
         for p in self.pieces:
             p.send_move()
-        self.dieces.send_state()
+        self.dice.send_state()
 
     def on_init(self):
         pygame.init()
@@ -321,7 +324,7 @@ class App(ConnectionListener):
             self._running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                self.dieces.roll()
+                self.dice.roll()
             elif event.key == pygame.K_ESCAPE:
                 self.init_pieces()
         else:
@@ -338,7 +341,7 @@ class App(ConnectionListener):
                         self.pieces.insert(0, self.pieces.pop(idx))
                     break
             else:
-                self.dieces.handle_event(event)
+                self.dice.handle_event(event)
 
     def on_loop(self):
         self.keep_connection_alive()
@@ -351,7 +354,7 @@ class App(ConnectionListener):
         self.board.render(self._screen)
         for piece in self.pieces[::-1]:
             piece.update(self._screen)
-        self.dieces.render(self._screen)
+        self.dice.render(self._screen)
         pygame.display.flip()
 
     def on_cleanup(self):
@@ -380,7 +383,7 @@ class App(ConnectionListener):
         self.init_pieces(False)
 
     def Network_roll(self, data):
-        self.dieces.roll(data)
+        self.dice.roll(data)
 
     def Network_impact(self, data):
         self.impact_sound.play()
