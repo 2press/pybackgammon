@@ -10,11 +10,11 @@ class App(ConnectionListener):
         self._running = True
         self._screen = None
         self.reset_sound = None
+        self.run_server = run_server
         self.size = self.width, self.height = 1800, 960
         self.board = Board(self)
         self.init_pieces()
         self.dice = Dice(self)
-        self.run_server = run_server
         self.player_count = 0
         self.other_mouse = OtherMouse()
         if self.run_server:

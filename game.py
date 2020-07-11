@@ -84,6 +84,7 @@ class Board:
             pygame.image.load("images/black_arrow.png"), 0.5)
         self.white_arrow = scale_image(
             pygame.image.load("images/white_arrow.png"), 0.5)
+        self.v_line = pygame.image.load("images/v-line.gif")
         self.triangle_width = self.triangles[0][0].get_width()
         self.triangle_height = self.triangles[0][0].get_height()
 
@@ -105,6 +106,8 @@ class Board:
                         (idx*self.triangle_width + self.offset_x * (idx // 6), self.triangle_height+self.offset_y+self.distance_y))
 
         pygame.draw.rect(screen, self.WOOD_COLOR, wood)
+
+        screen.blit(self.v_line, (self.app.width // 2, 0))
 
         online = self.app.player_count > 0
         text = f'{self.app.player_count} Spieler' if online else 'Offline'
@@ -128,11 +131,12 @@ class Dice:
 
         self.app = app
         self.roll_random()
-        self.generate_fluctiatons()
+        self.generate_fluctuations()
         self.sound_effect = None
         self.cheer_sound = None
         self.images = [None]*2
         self.rects = [None]*2
+        self.black = self.app.run_server
 
     def roll(self, data=None):
         if self.sound_effect is None:
@@ -141,11 +145,13 @@ class Dice:
             self.cheer_sound = pygame.mixer.Sound('sound/cheer.wav')
         if data is None:
             self.roll_random()
-            self.generate_fluctiatons()
+            self.generate_fluctuations()
+            self.black = self.app.run_server
             self.send_state()
         else:
-            self.generate_fluctiatons()
+            self.generate_fluctuations()
             self.dice = data['dice']
+            self.black = not self.app.run_server
         if self.dice[0] == self.dice[1]:
             self.cheer_sound.play()
         self.sound_effect.play()
@@ -153,7 +159,7 @@ class Dice:
     def roll_random(self):
         self.dice = [random.randint(1, 6) for _ in range(2)]
 
-    def generate_fluctiatons(self):
+    def generate_fluctuations(self):
         self.rotation = random.sample(range(0, 360), 2)
         self.offset = random.sample(range(-10, 10), 4)
 
@@ -161,9 +167,10 @@ class Dice:
         connection.Send({"action": "roll", 'dice': self.dice})
 
     def render(self, screen):
+        color = 'black' if self.black else 'white'
         for idx in range(2):
             self.images[idx] = pygame.image.load(
-                f"images/digit-{self.dice[idx]}-white.png")
+                f"images/digit-{self.dice[idx]}-{color}.png")
             self.images[idx] = pygame.transform.rotozoom(
                 self.images[idx], self.rotation[idx], 1.0)
             x = self.app.width // 2 + \
