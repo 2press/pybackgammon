@@ -177,11 +177,13 @@ class Board:
 
         pygame.draw.rect(screen, self.WOOD_COLOR, wood)
 
-        text = self.app.font.render(
-            f'{self.app.player_count} Spieler', True, (255, 255, 255))
-        text_rect = text.get_rect()
+        online = self.app.player_count > 0
+        text = f'{self.app.player_count} Spieler' if online else 'Offline'
+        color = (255, 255, 255) if online else (255, 0, 0)
+        text_surf = self.app.font.render(text, True, color)
+        text_rect = text_surf.get_rect()
         text_rect.center = (self.app.width // 2, 15)
-        screen.blit(text, text_rect)
+        screen.blit(text_surf, text_rect)
 
 
 class Dieces:
@@ -368,7 +370,11 @@ class App(ConnectionListener):
         self.on_cleanup()
 
     def Network_connected(self, data):
-        print("Connected to the Server")
+        print("Connected to the server")
+
+    def Network_disconnected(self, data):
+        print("Disconnected from the server")
+        self.player_count = 0
 
     def Network_resetboard(self, data):
         self.init_pieces(False)
