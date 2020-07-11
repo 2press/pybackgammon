@@ -161,18 +161,22 @@ class Dice:
             self.generate_fluctuations()
             self.black = self.app.run_server
             if self.black:
-                self.eye_counter[0] += sum(self.dice)
+                self.eye_counter[0] += sum(
+                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
             else:
-                self.eye_counter[1] += sum(self.dice)
+                self.eye_counter[1] += sum(
+                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
             self.send_state()
         else:
             self.generate_fluctuations()
             self.dice = data['dice']
             self.black = not self.app.run_server
             if self.black:
-                self.eye_counter[0] += sum(self.dice)
+                self.eye_counter[0] += sum(
+                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
             else:
-                self.eye_counter[1] += sum(self.dice)
+                self.eye_counter[1] += sum(
+                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
         if self.dice[0] == self.dice[1]:
             self.cheer_sound.play()
         self.sound_effect.play()
