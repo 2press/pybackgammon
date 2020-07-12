@@ -62,6 +62,7 @@ class App(ConnectionListener):
         for p in self.pieces:
             p.send_move()
         self.dice.send_state()
+        self.dice.send_eyes()
 
     def on_init(self):
         pygame.init()
@@ -158,6 +159,9 @@ class App(ConnectionListener):
 
     def Network_impact(self, data):
         self.impact_sound.play()
+
+    def Network_eyes(self, data):
+        self.dice.set_eye_counter(data['eyes'])
 
     def Network_pong(self, data):
         pass

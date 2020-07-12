@@ -171,15 +171,20 @@ class Dice:
             self.generate_fluctuations()
             self.dice = data['dice']
             self.black = not self.app.run_server
-            if self.black:
-                self.eye_counter[0] += sum(
-                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
-            else:
-                self.eye_counter[1] += sum(
-                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
+
+        eyes = sum(self.dice)
+
         if self.dice[0] == self.dice[1]:
             self.cheer_sound.play()
+            eyes = 2*eyes
+        self.eye_counter[0 if self.black else 1] += eyes
         self.sound_effect.play()
+
+    def set_eye_counter(self, eyes):
+        self.eye_counter = eyes
+
+    def send_eyes(self):
+        connection.Send({"action": "eyes", 'eyes': self.eye_counter})
 
     def roll_random(self):
         self.dice = [random.randint(1, 6) for _ in range(2)]

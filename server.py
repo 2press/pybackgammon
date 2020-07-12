@@ -28,6 +28,9 @@ class ClientChannel(Channel):
     def Network_impact(self, data):
         self._server.sendToOthers(data, self)
 
+    def Network_eyes(self, data):
+        self._server.sendToOthers(data, self)
+
     def Network_mousemotion(self, data):
         self._server.sendToOthers(data, self)
 
