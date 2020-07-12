@@ -160,12 +160,6 @@ class Dice:
             self.roll_random()
             self.generate_fluctuations()
             self.black = self.app.run_server
-            if self.black:
-                self.eye_counter[0] += sum(
-                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
-            else:
-                self.eye_counter[1] += sum(
-                    self.dice) if not self.dice[0] == self.dice[1] else 2*sum(self.dice)
             self.send_state()
         else:
             self.generate_fluctuations()
