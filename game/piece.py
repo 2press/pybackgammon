@@ -52,9 +52,10 @@ class Piece:
             connection.Send({'action': 'impact'})
             return True
         if self.dragging and event.type == pygame.MOUSEMOTION:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_SIZEALL)
             return True
         if event.type == pygame.MOUSEMOTION and self.criclecolide(event.pos):
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_SIZEALL)
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             return True
         return False
 

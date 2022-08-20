@@ -84,9 +84,9 @@ class Dice:
         return False
 
     def handle_event(self, event) -> bool:
-        if event.type == pygame.MOUSEMOTION and self._collides(event.pos):
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-            return True
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self._collides(event.pos):
             self.roll()
+            return True
+        if hasattr(event, 'pos') and self._collides(event.pos):
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             return True
