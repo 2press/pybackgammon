@@ -47,7 +47,7 @@ class Board:
         screen.blit(self.v_line, (self.app.width // 2, 0))
 
         online = self.app.player_count > 0
-        text = f'{self.app.player_count} Player' if online else 'Offline'
+        text = f'{self.app.player_count} Player(s)' if online else 'Offline'
         color = (255, 255, 255) if online else (255, 0, 0)
         text_surf = self.app.font.render(text, True, color)
         text_rect = text_surf.get_rect()
