@@ -2,7 +2,7 @@ import pygame
 from PodSixNet.Connection import ConnectionListener, connection
 
 from game import Board, Dice, Piece, OtherMouse
-from server import BackgammonServer
+from network import BackgammonServer
 
 
 class App(ConnectionListener):
@@ -58,7 +58,6 @@ class App(ConnectionListener):
                 connection.Send({"action": "resetboard"})
 
     def send_gamestate(self):
-        pieces = list()
         for p in self.pieces:
             p.send_move()
         self.dice.send_state()
@@ -67,8 +66,8 @@ class App(ConnectionListener):
     def on_init(self):
         pygame.init()
         pygame.mixer.init()
-        self.reset_sound = pygame.mixer.Sound('sound/button.wav')
-        self.impact_sound = pygame.mixer.Sound('sound/impact.wav')
+        self.reset_sound = pygame.mixer.Sound('assets/sound/button.wav')
+        self.impact_sound = pygame.mixer.Sound('assets/sound/impact.wav')
         self.font = pygame.font.Font(pygame.font.get_default_font(), 22)
         pygame.display.set_caption('Backgammon')
         self.clock = pygame.time.Clock()
@@ -144,26 +143,26 @@ class App(ConnectionListener):
             self.on_render()
         self.on_cleanup()
 
-    def Network_connected(self, data):
+    def Network_connected(self, _data):
         print("Connected to the server")
 
-    def Network_disconnected(self, data):
+    def Network_disconnected(self, _data):
         print("Disconnected from the server")
         self.player_count = 0
 
-    def Network_resetboard(self, data):
+    def Network_resetboard(self, _data):
         self.init_pieces(False)
 
     def Network_roll(self, data):
         self.dice.roll(data)
 
-    def Network_impact(self, data):
+    def Network_impact(self, _data):
         self.impact_sound.play()
 
     def Network_eyes(self, data):
         self.dice.set_eye_counter(data['eyes'])
 
-    def Network_pong(self, data):
+    def Network_pong(self, _data):
         pass
 
     def Network_mousemotion(self, data):
