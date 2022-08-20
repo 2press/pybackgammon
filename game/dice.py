@@ -20,11 +20,14 @@ class Dice:
     def reset(self):
         self.eye_counter = [0]*2
 
-    def roll(self, data=None):
+    def _load_sounds(self):
         if self.sound_effect is None:
             self.sound_effect = pygame.mixer.Sound('assets/sound/dice.wav')
         if self.cheer_sound is None:
             self.cheer_sound = pygame.mixer.Sound('assets/sound/cheer.wav')
+
+    def roll(self, data=None):
+        self._load_sounds()
         if data is None:
             self.roll_random()
             self.generate_fluctuations()
@@ -74,9 +77,16 @@ class Dice:
             self.rects[idx].center = (x, y)
             screen.blit(self.images[idx], self.rects[idx])
 
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            for r in self.rects:
-                if r.collidepoint(event.pos):
-                    self.roll()
-                    break
+    def _collides(self, pos) -> bool:
+        for r in self.rects:
+            if r is not None and r.collidepoint(pos):
+                return True
+        return False
+
+    def handle_event(self, event) -> bool:
+        if event.type == pygame.MOUSEMOTION and self._collides(event.pos):
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+            return True
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self._collides(event.pos):
+            self.roll()
+            return True

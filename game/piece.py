@@ -46,15 +46,17 @@ class Piece:
                            self.rect.center[1] - event.pos[1])
             self.dragging = True
             return True
-        elif self.dragging and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+        if self.dragging and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.dragging = False
             self.app.impact_sound.play()
             connection.Send({'action': 'impact'})
             return True
-        elif self.dragging and event.type == pygame.MOUSEMOTION:
+        if self.dragging and event.type == pygame.MOUSEMOTION:
             return True
-        else:
-            return False
+        if event.type == pygame.MOUSEMOTION and self.criclecolide(event.pos):
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_SIZEALL)
+            return True
+        return False
 
     def send_move(self):
         connection.Send({'action': 'move', 'piece': (

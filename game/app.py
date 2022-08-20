@@ -38,17 +38,18 @@ class App(ConnectionListener):
         ident = 1
         for field_id, field in enumerate(self.fields):
             top = field_id // 12 == 1
+            relative_field_id = field_id % 12
             for piece_id, is_black in enumerate(field):
                 offset_x = self.board.triangle_width//2 + \
-                    self.board.triangle_width * (field_id % 12) + \
-                    ((field_id % 12) // 6) * self.board.offset_x
+                    self.board.triangle_width * relative_field_id + \
+                    (relative_field_id // 6) * self.board.offset_x
                 x = offset_x if top else self.width - offset_x
-                ((field_id % 12) // 6) * self.board.offset_x
+                (relative_field_id // 6) * self.board.offset_x
                 y = self.piece_size * \
                     (piece_id*2+1) if top else self.height - \
                     self.piece_size * (piece_id*2+1)
-                pos = (x, y)
-                self.pieces.append(Piece(self, ident, pos, is_black))
+                self.pieces.append(
+                    Piece(self, ident=ident, pos=(x, y), black=is_black))
                 ident += 1
         self.dice.reset()
 
@@ -101,17 +102,20 @@ class App(ConnectionListener):
         for idx, piece in enumerate(self.pieces):
             if piece.handle_event(event):
                 if idx == 0:
-                    break
+                    return
                 for idx2, piece2 in enumerate(self.pieces):
                     if idx == idx2:
                         continue
                     if piece.rect.colliderect(piece2.rect):
-                        break
+                        return
                 else:
                     self.pieces.insert(0, self.pieces.pop(idx))
-                break
-        else:
-            self.dice.handle_event(event)
+                return
+
+        if self.dice.handle_event(event):
+            return
+
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     def on_loop(self):
         self.keep_connection_alive()
