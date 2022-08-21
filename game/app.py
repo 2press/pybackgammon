@@ -11,7 +11,7 @@ class App(ConnectionListener):
         self._screen = None
         self.reset_sound = None
         self.run_server = run_server
-        self.size = self.width, self.height = 1800, 960
+        self.size = self.width, self.height = 1960, 1120
         self.board = Board(self)
         self.dice = Dice(self)
         self.init_pieces()
@@ -40,14 +40,15 @@ class App(ConnectionListener):
             top = field_id // 12 == 1
             relative_field_id = field_id % 12
             for piece_id, is_black in enumerate(field):
-                offset_x = self.board.triangle_width//2 + \
+                offset_x = self.board.bounding_box_width + self.board.triangle_width//2 + \
                     self.board.triangle_width * relative_field_id + \
                     (relative_field_id // 6) * self.board.offset_x
                 x = offset_x if top else self.width - offset_x
                 (relative_field_id // 6) * self.board.offset_x
-                y = self.piece_size * \
+                y = self.board.bounding_box_width + self.piece_size * \
                     (piece_id*2+1) if top else self.height - \
-                    self.piece_size * (piece_id*2+1)
+                    self.piece_size * (piece_id*2+1) - \
+                    self.board.bounding_box_width
                 self.pieces.append(
                     Piece(self, ident=ident, pos=(x, y), black=is_black))
                 ident += 1
@@ -139,7 +140,7 @@ class App(ConnectionListener):
         if self.on_init() == False:
             self._running = False
 
-        while(self._running):
+        while (self._running):
             self.clock.tick(60)
             for event in pygame.event.get():
                 self.on_event(event)
